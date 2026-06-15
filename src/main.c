@@ -25,6 +25,9 @@ int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
     #endif
+    #ifdef _OPTS
+    do_options(argc, &*argv);
+    #endif
     #ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
     /* Build and run the Firefox bridge server only */
     return firefox_bridge_server();
