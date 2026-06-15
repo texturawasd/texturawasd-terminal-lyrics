@@ -1,0 +1,6 @@
+`-D_DEBUG` - enables debug prints
+`-D_FIREFOX_EXTENSION_BRIDGE` - enables support for firefox, using the extension at ./extension_for_firefox
+`-D_FIREFOX_EXTENSION_BRIDGE_SERVER` - build the server instead of the normal executable
+`-D_OPTS` - enable options (not yet implemented)
+
+note: just use ./run.sh to run normally, and ./run_for_firefox.sh for firefox

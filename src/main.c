@@ -4,9 +4,9 @@
 
 
 #include <stdio.h>
-#include <string.h>
 #include <curl/curl.h>
 #include <jansson.h>
+#include <unistd.h>
 
 #include "../common_utils/string_utils.c"
 
@@ -31,6 +31,11 @@ int main(int argc, char **argv) {
     #endif
 
     /* Normal client mode (with optional Firefox bridge support) */
+
+    #ifdef _FIREFOX_EXTENSION_BRIDGE
+    /* Wait a moment for Firefox extension to send metadata via POST request */
+    usleep(200000);  /* 200ms */
+    #endif
 
     #ifdef _DEBUG
     debug_all_metadata();
