@@ -5,12 +5,18 @@
 
 #include "../common_utils/string_utils.c"
 
+#if defined(_OPTS)
 #include "options.c"
+#endif
 #include "defs.h"
 
 int main(int argc, char **argv) {
+    #ifdef _OPTS
     do_options(argc, argv);
-
+    #endif
+    #ifdef _DEBUG
+    debug_all_metadata();
+    #endif
     str artist = get_artist();
     str title = get_title();
     double position = get_current_position();
@@ -36,6 +42,13 @@ int main(int argc, char **argv) {
     }
 
     printf("%.2f sec\n", position);
+
+    /* Fetch and display lyrics */
+    str lyrics = get_lyrics(artist.data ? artist.data : "", title.data ? title.data : "");
+    if (lyrics.data && lyrics.len > 0) {
+        printf("\n%s\n", lyrics.data);
+        str_destroy(&lyrics);
+    }
 
     if (artist.data) str_destroy(&artist);
     if (title.data) str_destroy(&title);

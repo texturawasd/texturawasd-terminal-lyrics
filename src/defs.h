@@ -11,6 +11,10 @@ str get_current_song(void);
 str get_artist(void);
 str get_title(void);
 double get_current_position(void);
+str get_lyrics(const char *artist, const char *title);
+str clean_title(const char *title);
+char *extract_json_string(char *start);
+void debug_all_metadata(void);
 
 typedef struct Word {
     str word;

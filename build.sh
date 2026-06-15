@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cc src/main.c -o bin
+cc "$@" -ljansson -lcurl src/main.c -o bin
