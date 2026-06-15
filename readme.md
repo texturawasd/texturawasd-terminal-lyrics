@@ -1,6 +1,7 @@
 # texturawasd-terminal-lyrics
 
 ## NOTE: does not support youtube (yes yt music tho), it's youtube's fault.
+## NOTE vol. 2: Firefox does not properly export the data this app needs, so I made an extension for it.
 
 View lyrics of a playing song in the terminal
 

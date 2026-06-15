@@ -10,6 +10,10 @@
 #include "../common_utils/process_utils.c"
 #include "defs.h"
 
+#ifdef _FIREFOX_EXTENSION_BRIDGE
+#include "thing_for_firefox_extension_bridge_thingy.c"
+#endif
+
 str get_figlet_tool(void) {
 
     str figlet_tool = str_create("toilet"); /* default to toilet */
@@ -23,16 +27,54 @@ str get_figlet_tool(void) {
 
 /* Get currently playing song metadata from playerctl */
 str get_current_song(void) {
+    #ifdef _FIREFOX_EXTENSION_BRIDGE
+    str firefox_artist = firefox_get_artist();
+    str firefox_title = firefox_get_title();
+    if (firefox_artist.len > 0 && firefox_title.len > 0) {
+        str result = str_create("");
+        result.cap = firefox_artist.len + firefox_title.len + 5;
+        result.data = malloc(result.cap);
+        snprintf(result.data, result.cap, "%s - %s", firefox_artist.data, firefox_title.data);
+        result.len = strlen(result.data);
+        str_destroy(&firefox_artist);
+        str_destroy(&firefox_title);
+        return result;
+    }
+    str_destroy(&firefox_artist);
+    str_destroy(&firefox_title);
+    #endif
     return str_create(capture_output("playerctl metadata --format '{{artist}} - {{title}}'"));
 }
 
-/* Get artist from playerctl */
+/* Get artist from playerctl or Firefox bridge */
 str get_artist(void) {
+    #ifdef _FIREFOX_EXTENSION_BRIDGE
+    str firefox_artist = firefox_get_artist();
+    #ifdef _DEBUG
+    fprintf(stderr, "DEBUG: get_artist - firefox returned: '%s' (len %zu)\n",
+        firefox_artist.data ? firefox_artist.data : "(null)", firefox_artist.len);
+    #endif
+    if (firefox_artist.len > 0) {
+        return firefox_artist;
+    }
+    str_destroy(&firefox_artist);
+    #endif
     return str_create(capture_output("playerctl metadata --format '{{artist}}'"));
 }
 
-/* Get title from playerctl */
+/* Get title from playerctl or Firefox bridge */
 str get_title(void) {
+    #ifdef _FIREFOX_EXTENSION_BRIDGE
+    str firefox_title = firefox_get_title();
+    #ifdef _DEBUG
+    fprintf(stderr, "DEBUG: get_title - firefox returned: '%s' (len %zu)\n",
+        firefox_title.data ? firefox_title.data : "(null)", firefox_title.len);
+    #endif
+    if (firefox_title.len > 0) {
+        return firefox_title;
+    }
+    str_destroy(&firefox_title);
+    #endif
     return str_create(capture_output("playerctl metadata --format '{{title}}'"));
 }
 
@@ -50,8 +92,14 @@ void debug_all_metadata(void) {
 }
 #endif
 
-/* Get current position in seconds from playerctl */
+/* Get current position in seconds from playerctl or Firefox bridge */
 double get_current_position(void) {
+    #ifdef _FIREFOX_EXTENSION_BRIDGE
+    double firefox_pos = firefox_get_position();
+    if (firefox_pos > 0.0) {
+        return firefox_pos;
+    }
+    #endif
     str pos_str = str_create(capture_output("playerctl position"));
     if (!pos_str.data) {
         return 0.0;

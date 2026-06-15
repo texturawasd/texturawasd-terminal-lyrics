@@ -1,3 +1,8 @@
+#if !defined(__linux__) && !defined(_DO_AS_I_SAY)
+#error This program is only supported on Linux.
+#endif
+
+
 #include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
@@ -5,15 +10,28 @@
 
 #include "../common_utils/string_utils.c"
 
+#ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
+#include "thing_for_firefox_extension_bridge_thingy.c"
+int firefox_bridge_server(void);
+#endif
+
 #if defined(_OPTS)
 #include "options.c"
 #endif
 #include "defs.h"
 
 int main(int argc, char **argv) {
-    #ifdef _OPTS
-    do_options(argc, argv);
+    #if !defined (_OPTS)
+    (void)argc;
+    (void)argv;
     #endif
+    #ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
+    /* Build and run the Firefox bridge server only */
+    return firefox_bridge_server();
+    #endif
+
+    /* Normal client mode (with optional Firefox bridge support) */
+
     #ifdef _DEBUG
     debug_all_metadata();
     #endif

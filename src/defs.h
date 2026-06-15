@@ -16,6 +16,19 @@ str clean_title(const char *title);
 char *extract_json_string(char *start);
 void debug_all_metadata(void);
 
+#ifdef _OPTS
+void do_options(int argc, char **argv);
+int should_run_firefox_bridge_server(void);
+#endif
+
+#ifdef _FIREFOX_EXTENSION_BRIDGE
+/* Firefox bridge getter functions */
+str firefox_get_artist(void);
+str firefox_get_title(void);
+double firefox_get_position(void);
+int firefox_bridge_server(void);
+#endif
+
 typedef struct Word {
     str word;
     double start;

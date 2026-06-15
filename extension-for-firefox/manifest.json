@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+
+  "name": "Terminal Lyrics",
+
+  "version": "0.1",
+
+  "description": "Bridge Firefox media metadata to terminal lyrics app",
+
+  "permissions": [
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "https://music.youtube.com/*",
+    "http://127.0.0.1:3847/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://music.youtube.com/*"
+      ],
+
+      "js": [
+        "content.js"
+      ],
+
+      "run_at": "document_start"
+    }
+  ]
+}
