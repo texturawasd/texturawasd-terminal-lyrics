@@ -6,12 +6,18 @@
 #include <curl/curl.h>
 #include <jansson.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include "../common_utils/string_utils.c"
 #include "../common_utils/path_utils.c"
 #include "../common_utils/file_utils.c"
+
+#if defined(_OPTS)
+#include "../common_utils/args.c"
+#endif
 
 #include "song_utils.h"
 
@@ -27,10 +33,19 @@
 int main(int argc, char **argv) {
     /* Set cache directory */
     str cache_dir;
+    int pretty_mode = 0;
+    str figlet_tool = NULL_STRING;
+
     #ifdef _OPTS
+    pretty_mode = arg_is_present("pretty", argc, &*argv);
+    if (pretty_mode) {
+        figlet_tool = get_figlet_tool();
+    }
+
     cache_dir = arg_is_present("cache_dir", argc, &*argv) ? get_arg_value("cache_dir", argc, &*argv) : NULL_STRING;
     #ifdef _DEBUG
     printf("DEBUG: cache_dir from args: '%s'\n", cache_dir.data ? cache_dir.data : "(null)");
+    printf("DEBUG: pretty_mode: %d\n", pretty_mode);
     #endif
     /* Fallback to default if not provided */
     if (!cache_dir.data || cache_dir.len == 0) {
@@ -54,6 +69,7 @@ int main(int argc, char **argv) {
 
     /* Normal client mode (with optional Firefox bridge support) */
 
+    restart:
     #ifdef _FIREFOX_EXTENSION_BRIDGE
     /* Give extension a brief moment to start sending data */
     usleep(50000);  /* 50ms */
@@ -148,6 +164,9 @@ int main(int argc, char **argv) {
         printf("\n");
         fflush(stdout);
 
+        str prev_line = str_create("");
+        int update_check = 0;
+
         while (1) {
             /* Get current position */
             position = get_current_position();
@@ -155,24 +174,137 @@ int main(int argc, char **argv) {
             /* Get current lyric line */
             str current_line = get_current_lyric_line(lyrics.data, position);
 
-            /* Clear line and display current lyric */
-            printf("\r\033[K");  /* Clear from cursor to end of line */
-            if (current_line.data && current_line.len > 0) {
-                printf("%.2f sec  %s", position, current_line.data);
-            } else {
-                printf("%.2f sec  ", position);
+            /* Only print if line changed */
+            if (!current_line.data || !prev_line.data ||
+                strcmp(current_line.data ? current_line.data : "",
+                       prev_line.data ? prev_line.data : "") != 0) {
+
+                if (pretty_mode && figlet_tool.data && figlet_tool.len > 0) {
+                    /* Pretty mode: use figlet/toilet to display lyric */
+                    printf("\033[2J\033[H");  /* Clear screen and move cursor to top */
+
+                    if (current_line.data && current_line.len > 0) {
+                        /* Create temp file to safely pass text to figlet */
+                        FILE *tmp = fopen("/tmp/lyrics_display.txt", "w");
+                        if (tmp) {
+                            fprintf(tmp, "%s", current_line.data);
+                            fclose(tmp);
+
+                            char cmd[512];
+                            /* Use slant font - readable and UTF-8 compatible */
+                            snprintf(cmd, sizeof(cmd), "cat /tmp/lyrics_display.txt | %s -f slant -w 200 2>/dev/null || cat /tmp/lyrics_display.txt",
+                                     figlet_tool.data);
+                            char *output = capture_output(cmd);
+                            if (output) {
+                                /* Get terminal dimensions */
+                                int term_width = 80, term_height = 24;
+                                char *width_str = capture_output("tput cols 2>/dev/null");
+                                char *height_str = capture_output("tput lines 2>/dev/null");
+                                if (width_str) {
+                                    term_width = atoi(width_str);
+                                    free(width_str);
+                                    if (term_width < 40) term_width = 80;
+                                }
+                                if (height_str) {
+                                    term_height = atoi(height_str);
+                                    free(height_str);
+                                    if (term_height < 10) term_height = 24;
+                                }
+
+                                /* Count lines in output */
+                                int output_lines = 0;
+                                char *output_copy = malloc(strlen(output) + 1);
+                                strcpy(output_copy, output);
+                                char *line = strtok(output_copy, "\n");
+                                while (line) {
+                                    output_lines++;
+                                    line = strtok(NULL, "\n");
+                                }
+                                free(output_copy);
+
+                                /* Calculate vertical padding */
+                                int vert_padding = (term_height - output_lines) / 2;
+                                if (vert_padding < 0) vert_padding = 0;
+
+                                /* Print blank lines for vertical centering */
+                                for (int i = 0; i < vert_padding; i++) printf("\n");
+
+                                /* Print each line centered horizontally */
+                                output_copy = malloc(strlen(output) + 1);
+                                strcpy(output_copy, output);
+                                line = strtok(output_copy, "\n");
+                                while (line) {
+                                    size_t line_len = strlen(line);
+                                    if (line_len > 0) {
+                                        int horiz_padding = (term_width - (int)line_len) / 2;
+                                        if (horiz_padding < 0) horiz_padding = 0;
+                                        for (int i = 0; i < horiz_padding; i++) printf(" ");
+                                    }
+                                    printf("%s\n", line);
+                                    line = strtok(NULL, "\n");
+                                }
+                                free(output_copy);
+                                free(output);
+                            }
+                        }
+                    }
+                    fflush(stdout);
+                } else {
+                    /* Normal mode: print with timestamp */
+                    if (current_line.data && current_line.len > 0) {
+                        printf("[%.2f sec]  %s\n", position, current_line.data);
+                    } else {
+                        printf("[%.2f sec]\n", position);
+                    }
+                    fflush(stdout);
+                }
+
+                /* Update previous line tracker */
+                if (prev_line.data) str_destroy(&prev_line);
+                prev_line = str_create(current_line.data ? current_line.data : "");
             }
-            fflush(stdout);
 
             if (current_line.data) {
                 str_destroy(&current_line);
             }
 
+            /* Check for song change every 10 updates (~1 second with default sleep) */
+            update_check++;
+            if (update_check >= 10) {
+                update_check = 0;
+                str new_artist = get_artist();
+                str new_title = get_title();
+
+                /* If song changed, break loop to reload */
+                if ((new_artist.data && !artist.data) || (!new_artist.data && artist.data) ||
+                    (new_artist.data && artist.data && strcmp(new_artist.data, artist.data) != 0) ||
+                    (new_title.data && !title.data) || (!new_title.data && title.data) ||
+                    (new_title.data && title.data && strcmp(new_title.data, title.data) != 0)) {
+                    #ifdef _DEBUG
+                    fprintf(stderr, "DEBUG: Song changed, restarting...\n");
+                    #endif
+                    if (artist.data) str_destroy(&artist);
+                    if (title.data) str_destroy(&title);
+                    str_destroy(&new_artist);
+                    str_destroy(&new_title);
+                    str_destroy(&prev_line);
+                    break;
+                }
+
+                if (new_artist.data) str_destroy(&new_artist);
+                if (new_title.data) str_destroy(&new_title);
+            }
+
             /* Update every 100ms */
             usleep(100000);
         }
-        #endif
+
+        if (prev_line.data) str_destroy(&prev_line);
         str_destroy(&lyrics);
+
+        /* Restart the program to get new song's lyrics */
+        goto restart;
+        #endif
     }
 
     if (artist.data) str_destroy(&artist);

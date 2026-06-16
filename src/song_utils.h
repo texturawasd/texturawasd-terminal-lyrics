@@ -6,6 +6,8 @@
 #include "song_utils.c"
 #include "utils.h"
 
+str get_figlet_tool(void);
+
 str get_current_song(void);
 
 str get_artist(void);

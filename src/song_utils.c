@@ -1,6 +1,8 @@
 #include "../common_utils/string_utils.c"
 #include "../common_utils/process_utils.c"
+#include "../common_utils/have.c"
 #include "utils.h"
+
 
 /* Get currently playing song metadata from playerctl */
 str get_current_song(void) {
