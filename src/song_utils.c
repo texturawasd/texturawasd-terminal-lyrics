@@ -203,3 +203,85 @@ str get_lyrics(const char *artist, const char *title) {
 
     return lyrics;
 }
+
+/* Parse timestamp in format [mm:ss.cs] and return time in seconds */
+static double parse_timestamp(const char *timestamp) {
+    if (!timestamp || timestamp[0] != '[') {
+        return -1.0;
+    }
+
+    int minutes = 0, seconds = 0, centiseconds = 0;
+    int parsed = sscanf(timestamp, "[%d:%d.%d]", &minutes, &seconds, &centiseconds);
+
+    if (parsed != 3) {
+        return -1.0;
+    }
+
+    return minutes * 60.0 + seconds + centiseconds / 100.0;
+}
+
+/* Extract text after timestamp from a lyric line */
+static str extract_lyric_text(const char *line) {
+    if (!line) return str_create("");
+
+    /* Find closing bracket */
+    const char *bracket_end = strchr(line, ']');
+    if (!bracket_end) return str_create("");
+
+    /* Text starts after the bracket */
+    const char *text_start = bracket_end + 1;
+
+    /* Skip leading spaces */
+    while (*text_start && isspace((unsigned char)*text_start)) {
+        text_start++;
+    }
+
+    return str_create(text_start);
+}
+
+/* Get the current lyric line based on playback position */
+/* Returns the line text (without timestamp) for the current time */
+str get_current_lyric_line(const char *lyrics, double current_position) {
+    if (!lyrics || lyrics[0] == '\0' || current_position < 0.0) {
+        return str_create("");
+    }
+
+    /* Split lyrics into lines */
+    str lyrics_str = str_create(lyrics);
+    char *lyrics_copy = malloc(lyrics_str.len + 1);
+    if (!lyrics_copy) {
+        str_destroy(&lyrics_str);
+        return str_create("");
+    }
+    strcpy(lyrics_copy, lyrics_str.data);
+    str_destroy(&lyrics_str);
+
+    str current_line = str_create("");
+    double current_line_time = -1.0;
+
+    /* Parse line by line */
+    char *line = strtok(lyrics_copy, "\n");
+    while (line) {
+        double timestamp = parse_timestamp(line);
+
+        if (timestamp >= 0.0) {
+            /* Check if current position falls within this line's time */
+            if (timestamp <= current_position) {
+                /* Update current line */
+                if (current_line.data) {
+                    str_destroy(&current_line);
+                }
+                current_line = extract_lyric_text(line);
+                current_line_time = timestamp;
+            } else {
+                /* We've passed the current time, stop searching */
+                break;
+            }
+        }
+
+        line = strtok(NULL, "\n");
+    }
+
+    free(lyrics_copy);
+    return current_line;
+}

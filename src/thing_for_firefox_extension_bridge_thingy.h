@@ -13,12 +13,13 @@ typedef struct {
     char *artist;
     char *album;
     char *url;
+    double position;
 } firefox_metadata;
 
 static char* firefox_extract_json_value(const char *json, const char *key);
 
 static void firefox_store_metadata(const char *title, const char *artist,
-                                   const char *album, const char *url);
+                                   const char *album, const char *url, double position);
 
 static void send_http_response(int client, const char *body, const char *content_type);
 

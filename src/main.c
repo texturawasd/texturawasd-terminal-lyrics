@@ -140,7 +140,38 @@ int main(int argc, char **argv) {
 
     /* Display lyrics */
     if (lyrics.data && lyrics.len > 0) {
+        #if defined(_DEBUG) || defined(_JUST_SHOW_ALL_LYRICS)
+        /* Debug mode or explicit flag: show all lyrics */
         printf("\n%s\n", lyrics.data);
+        #else
+        /* Normal mode: continuously update current lyric line based on position */
+        printf("\n");
+        fflush(stdout);
+
+        while (1) {
+            /* Get current position */
+            position = get_current_position();
+
+            /* Get current lyric line */
+            str current_line = get_current_lyric_line(lyrics.data, position);
+
+            /* Clear line and display current lyric */
+            printf("\r\033[K");  /* Clear from cursor to end of line */
+            if (current_line.data && current_line.len > 0) {
+                printf("%.2f sec  %s", position, current_line.data);
+            } else {
+                printf("%.2f sec  ", position);
+            }
+            fflush(stdout);
+
+            if (current_line.data) {
+                str_destroy(&current_line);
+            }
+
+            /* Update every 100ms */
+            usleep(100000);
+        }
+        #endif
         str_destroy(&lyrics);
     }
 

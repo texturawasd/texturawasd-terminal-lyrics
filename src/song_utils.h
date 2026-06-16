@@ -18,4 +18,6 @@ str clean_title(const char *title);
 
 str get_lyrics(const char *artist, const char *title);
 
+str get_current_lyric_line(const char *lyrics, double current_position);
+
 #endif

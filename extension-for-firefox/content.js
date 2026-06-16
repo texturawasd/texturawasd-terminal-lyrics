@@ -5,6 +5,24 @@ const script = document.createElement('script');
 script.textContent = `
 console.log("[Terminal Lyrics Page] Injected script running");
 
+function getCurrentPosition() {
+    try {
+        // Try to get video element (YouTube Music uses <video> tags)
+        const videos = document.querySelectorAll('video');
+        if (videos.length > 0) {
+            for (let video of videos) {
+                // Skip if duration is 0 or invalid
+                if (video.duration > 0 && video.currentTime >= 0) {
+                    return video.currentTime;
+                }
+            }
+        }
+    } catch (e) {
+        // Silently ignore
+    }
+    return 0.0;
+}
+
 setInterval(() => {
     try {
         let m = navigator.mediaSession.metadata;
@@ -13,11 +31,14 @@ setInterval(() => {
             return;
         }
 
+        const position = getCurrentPosition();
+
         const payload = {
             title: m.title || "",
             artist: m.artist || "",
             album: m.album || "",
-            url: location.href
+            url: location.href,
+            position: position
         };
 
         console.log("[Terminal Lyrics Page] Metadata found, posting:", payload);

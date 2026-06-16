@@ -67,7 +67,7 @@ static char* firefox_extract_json_value(const char *json, const char *key) {
 
 /* Free old metadata and store new values */
 static void firefox_store_metadata(const char *title, const char *artist,
-                                   const char *album, const char *url) {
+                                   const char *album, const char *url, double position) {
     if (firefox_data.title) free(firefox_data.title);
     if (firefox_data.artist) free(firefox_data.artist);
     if (firefox_data.album) free(firefox_data.album);
@@ -77,6 +77,7 @@ static void firefox_store_metadata(const char *title, const char *artist,
     firefox_data.artist = artist ? strdup(artist) : NULL;
     firefox_data.album = album ? strdup(album) : NULL;
     firefox_data.url = url ? strdup(url) : NULL;
+    firefox_data.position = position;
 }
 
 /* Send HTTP response */
@@ -128,11 +129,12 @@ static void send_cors_preflight(int client) {
 /* Get metadata as JSON response */
 static void firefox_get_metadata_json(char *buffer, size_t size) {
     snprintf(buffer, size,
-        "{\"title\":\"%s\",\"artist\":\"%s\",\"album\":\"%s\",\"url\":\"%s\"}",
+        "{\"title\":\"%s\",\"artist\":\"%s\",\"album\":\"%s\",\"url\":\"%s\",\"position\":%.2f}",
         firefox_data.title ? firefox_data.title : "",
         firefox_data.artist ? firefox_data.artist : "",
         firefox_data.album ? firefox_data.album : "",
-        firefox_data.url ? firefox_data.url : "");
+        firefox_data.url ? firefox_data.url : "",
+        firefox_data.position);
 }
 
 /* Handle incoming HTTP requests */
@@ -171,13 +173,21 @@ static void firefox_handle_request(int client, const char *request) {
             char *album = firefox_extract_json_value(body_start, "album");
             char *url = firefox_extract_json_value(body_start, "url");
 
+            /* Parse position (numeric field) */
+            double position = 0.0;
+            char *pos_str = firefox_extract_json_value(body_start, "position");
+            if (pos_str) {
+                position = strtod(pos_str, NULL);
+                free(pos_str);
+            }
+
             #ifdef _DEBUG
-            fprintf(stderr, "DEBUG: Parsed - title: '%s', artist: '%s'\n",
-                title ? title : "", artist ? artist : "");
+            fprintf(stderr, "DEBUG: Parsed - title: '%s', artist: '%s', position: %.2f\n",
+                title ? title : "", artist ? artist : "", position);
             #endif
 
             /* Store and respond */
-            firefox_store_metadata(title, artist, album, url);
+            firefox_store_metadata(title, artist, album, url, position);
 
             char response_body[BUFFER_SIZE];
             firefox_get_metadata_json(response_body, sizeof(response_body));
@@ -475,8 +485,26 @@ str firefox_get_title(void) {
 }
 
 double firefox_get_position(void) {
-    /* Firefox doesn't provide position data through extension */
-    return 0.0;
+    char *json = firefox_http_get_metadata();
+    if (!json) {
+        #ifdef _DEBUG
+        fprintf(stderr, "DEBUG: firefox_get_position - no JSON response\n");
+        #endif
+        return 0.0;
+    }
+
+    char *pos_str = firefox_extract_json_value(json, "position");
+    double position = 0.0;
+    if (pos_str) {
+        position = strtod(pos_str, NULL);
+        #ifdef _DEBUG
+        fprintf(stderr, "DEBUG: firefox_get_position extracted: %.2f\n", position);
+        #endif
+        free(pos_str);
+    }
+
+    free(json);
+    return position;
 }
 
 #endif /* _FIREFOX_EXTENSION_BRIDGE */
