@@ -6,7 +6,7 @@ void do_options(int argc, char **argv) {
         return;
     }
     if (arg_is_present("help", argc, &*argv) || arg_is_present("h", argc, &*argv)) {
-        puts("--help passed"); /* help not yet implemented */
+        puts("help asked (unimplemented)"); /* help not yet implemented */
     }
 }
 

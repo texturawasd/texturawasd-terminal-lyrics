@@ -2,13 +2,13 @@
 #error This program is only supported on Linux.
 #endif
 
-
 #include <stdio.h>
 #include <curl/curl.h>
 #include <jansson.h>
 #include <unistd.h>
 
 #include "../common_utils/string_utils.c"
+#include "../common_utils/path_utils.c"
 
 #ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
 #include "thing_for_firefox_extension_bridge_thingy.c"
@@ -21,13 +21,22 @@ int firefox_bridge_server(void);
 #include "defs.h"
 
 int main(int argc, char **argv) {
-    #if !defined (_OPTS)
+    /* Set cache directory */
+    str cache_dir;
+    #ifdef _OPTS
+    cache_dir = arg_is_present("cache_dir", argc, &*argv) ? get_arg_value("cache_dir", argc, &*argv) : NULL_STRING;
+    #ifdef _DEBUG
+    printf("DEBUG: cache_dir from args: '%s'\n", cache_dir.data ? cache_dir.data : "(null)");
+    #endif
+    #else
+    cache_dir = expand_home("~/.cache/texturawasd-terminal-lyrics");
+    #endif
+
+    #if !defined(_OPTS)
     (void)argc;
     (void)argv;
     #endif
-    #ifdef _OPTS
-    do_options(argc, &*argv);
-    #endif
+
     #ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
     /* Build and run the Firefox bridge server only */
     return firefox_bridge_server();
