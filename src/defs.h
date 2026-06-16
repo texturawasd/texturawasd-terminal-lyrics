@@ -1,8 +1,8 @@
-#pragma once
+#ifndef DEFS_H
+#define DEFS_H
 
 #include "../common_utils/string_utils.c"
 #include "../common_utils/have.c"
-#include "utils.c"
 
 /* determines `figlet` or `toilet`, defaults to `toilet` */
 str get_figlet_tool(void);
@@ -39,3 +39,5 @@ typedef struct {
     bool use_figlet;
     int refresh_rate_ms;
 } options;
+
+#endif

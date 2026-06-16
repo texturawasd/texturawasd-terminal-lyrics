@@ -1,5 +1,3 @@
-#ifndef _FIREFOX_EXTENSION_BRIDGE_INCLUDED
-#define _FIREFOX_EXTENSION_BRIDGE_INCLUDED
 
 #ifdef _FIREFOX_EXTENSION_BRIDGE
 
@@ -14,19 +12,7 @@
 #include <netinet/in.h>
 
 #include "../common_utils/string_utils.c"
-
-int firefox_bridge_server(void);
-
-#define FIREFOX_BRIDGE_PORT 3847
-#define BUFFER_SIZE 8192
-
-/* Store the last received metadata from Firefox */
-typedef struct {
-    char *title;
-    char *artist;
-    char *album;
-    char *url;
-} firefox_metadata;
+#include "thing_for_firefox_extension_bridge_thingy.h"
 
 static firefox_metadata firefox_data = {0};
 static volatile sig_atomic_t bridge_running = 1;
@@ -445,4 +431,3 @@ double firefox_get_position(void) {
 
 #endif /* _FIREFOX_EXTENSION_BRIDGE */
 
-#endif /* _FIREFOX_EXTENSION_BRIDGE_INCLUDED */
