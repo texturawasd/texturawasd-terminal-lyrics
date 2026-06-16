@@ -15,8 +15,8 @@ for arg in "$@"; do
     esac
 done
 
-cc $compiler_flags -D_FIREFOX_EXTENSION_BRIDGE -D_OPTS -ljansson -lcurl src/main.c -o bin
-cc $compiler_flags -D_FIREFOX_EXTENSION_BRIDGE -D_FIREFOX_EXTENSION_BRIDGE_SERVER -D_OPTS -ljansson -lcurl src/main.c -o server
+cc $compiler_flags -D_FIREFOX_EXTENSION_BRIDGE -D_OPTS -ljansson -lcurl src/main.c src/bitmap_font.c -o bin
+cc $compiler_flags -D_FIREFOX_EXTENSION_BRIDGE -D_FIREFOX_EXTENSION_BRIDGE_SERVER -D_OPTS -ljansson -lcurl src/main.c src/bitmap_font.c -o server
 
 ./server &
 ./bin $binary_args

@@ -19,6 +19,7 @@
 #include "../common_utils/args.c"
 #endif
 
+#include "bitmap_font.h"
 #include "song_utils.h"
 
 #ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
@@ -34,17 +35,12 @@ int main(int argc, char **argv) {
     /* Set cache directory */
     str cache_dir;
     int pretty_mode = 0;
-    str figlet_tool = NULL_STRING;
 
     #ifdef _OPTS
     pretty_mode = arg_is_present("pretty", argc, &*argv);
-    if (pretty_mode) {
-        figlet_tool = get_figlet_tool();
-    }
 
     cache_dir = arg_is_present("cache_dir", argc, &*argv) ? get_arg_value("cache_dir", argc, &*argv) : NULL_STRING;
     #ifdef _DEBUG
-    printf("DEBUG: cache_dir from args: '%s'\n", cache_dir.data ? cache_dir.data : "(null)");
     printf("DEBUG: pretty_mode: %d\n", pretty_mode);
     #endif
     /* Fallback to default if not provided */
@@ -179,74 +175,29 @@ int main(int argc, char **argv) {
                 strcmp(current_line.data ? current_line.data : "",
                        prev_line.data ? prev_line.data : "") != 0) {
 
-                if (pretty_mode && figlet_tool.data && figlet_tool.len > 0) {
-                    /* Pretty mode: use figlet/toilet to display lyric */
+                if (pretty_mode) {
+                    /* Pretty mode: use bitmap font with Unicode blocks */
                     printf("\033[2J\033[H");  /* Clear screen and move cursor to top */
 
                     if (current_line.data && current_line.len > 0) {
-                        /* Create temp file to safely pass text to figlet */
-                        FILE *tmp = fopen("/tmp/lyrics_display.txt", "w");
-                        if (tmp) {
-                            fprintf(tmp, "%s", current_line.data);
-                            fclose(tmp);
-
-                            char cmd[512];
-                            /* Use slant font - readable and UTF-8 compatible */
-                            snprintf(cmd, sizeof(cmd), "cat /tmp/lyrics_display.txt | %s -f slant -w 200 2>/dev/null || cat /tmp/lyrics_display.txt",
-                                     figlet_tool.data);
-                            char *output = capture_output(cmd);
-                            if (output) {
-                                /* Get terminal dimensions */
-                                int term_width = 80, term_height = 24;
-                                char *width_str = capture_output("tput cols 2>/dev/null");
-                                char *height_str = capture_output("tput lines 2>/dev/null");
-                                if (width_str) {
-                                    term_width = atoi(width_str);
-                                    free(width_str);
-                                    if (term_width < 40) term_width = 80;
-                                }
-                                if (height_str) {
-                                    term_height = atoi(height_str);
-                                    free(height_str);
-                                    if (term_height < 10) term_height = 24;
-                                }
-
-                                /* Count lines in output */
-                                int output_lines = 0;
-                                char *output_copy = malloc(strlen(output) + 1);
-                                strcpy(output_copy, output);
-                                char *line = strtok(output_copy, "\n");
-                                while (line) {
-                                    output_lines++;
-                                    line = strtok(NULL, "\n");
-                                }
-                                free(output_copy);
-
-                                /* Calculate vertical padding */
-                                int vert_padding = (term_height - output_lines) / 2;
-                                if (vert_padding < 0) vert_padding = 0;
-
-                                /* Print blank lines for vertical centering */
-                                for (int i = 0; i < vert_padding; i++) printf("\n");
-
-                                /* Print each line centered horizontally */
-                                output_copy = malloc(strlen(output) + 1);
-                                strcpy(output_copy, output);
-                                line = strtok(output_copy, "\n");
-                                while (line) {
-                                    size_t line_len = strlen(line);
-                                    if (line_len > 0) {
-                                        int horiz_padding = (term_width - (int)line_len) / 2;
-                                        if (horiz_padding < 0) horiz_padding = 0;
-                                        for (int i = 0; i < horiz_padding; i++) printf(" ");
-                                    }
-                                    printf("%s\n", line);
-                                    line = strtok(NULL, "\n");
-                                }
-                                free(output_copy);
-                                free(output);
-                            }
+                        /* Get terminal height */
+                        int term_height = 24;
+                        char *height_str = capture_output("tput lines 2>/dev/null");
+                        if (height_str) {
+                            term_height = atoi(height_str);
+                            free(height_str);
+                            if (term_height < 10) term_height = 24;
                         }
+
+                        /* Bitmap font is 7 rows high, calculate vertical padding */
+                        int vert_padding = (term_height - 7) / 2;
+                        if (vert_padding < 0) vert_padding = 0;
+
+                        /* Print blank lines for vertical centering */
+                        for (int i = 0; i < vert_padding; i++) printf("\n");
+
+                        /* Render bitmap text (already handles horizontal centering) */
+                        render_bitmap_text(current_line.data);
                     }
                     fflush(stdout);
                 } else {
