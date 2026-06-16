@@ -2,7 +2,7 @@
 #define _FIREFOX_EXTENSION_BRIDGE_INCLUDED
 #ifdef _FIREFOX_EXTENSION_BRIDGE
 
-#include "../common_utils/string_utils.c"
+#include "../common_utils/simple_strings.h"
 
 #define FIREFOX_BRIDGE_PORT 3847
 #define BUFFER_SIZE 8192

@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "../common_utils/simple_strings.h"
 #include "utils.c"
 
 str get_figlet_tool(void);

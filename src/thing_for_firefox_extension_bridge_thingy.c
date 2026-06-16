@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 
-#include "../common_utils/string_utils.c"
+#include "../common_utils/simple_strings.h"
 #include "thing_for_firefox_extension_bridge_thingy.h"
 
 static firefox_metadata firefox_data = {0};

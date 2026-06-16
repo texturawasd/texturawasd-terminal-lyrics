@@ -1,8 +1,8 @@
 #ifndef SONG_UTILS_H
 #define SONG_UTILS_H
 
-#include "../common_utils/string_utils.c"
-#include "../common_utils/process_utils.c"
+#include "../common_utils/simple_strings.h"
+#include "../common_utils/process_utils.h"
 #include "song_utils.c"
 #include "utils.h"
 

@@ -1,6 +1,6 @@
-#include "../common_utils/string_utils.c"
-#include "../common_utils/process_utils.c"
-#include "../common_utils/have.c"
+#include "../common_utils/simple_strings.h"
+#include "../common_utils/process_utils.h"
+#include "../common_utils/have.h"
 #include "utils.h"
 
 

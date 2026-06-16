@@ -11,12 +11,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "../common_utils/string_utils.c"
-#include "../common_utils/path_utils.c"
-#include "../common_utils/file_utils.c"
+#include "../common_utils/simple_strings.h"
+#include "../common_utils/path_utils.h"
+#include "../common_utils/file_utils.h"
 
 #if defined(_OPTS)
-#include "../common_utils/args.c"
+#include "../common_utils/args.h"
 #endif
 
 #include "bitmap_font.h"

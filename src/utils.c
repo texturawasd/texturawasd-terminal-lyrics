@@ -3,8 +3,8 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "../common_utils/string_utils.c"
-#include "../common_utils/have.c"
+#include "../common_utils/simple_strings.h"
+#include "../common_utils/have.h"
 #include "defs.h"
 
 #ifdef _FIREFOX_EXTENSION_BRIDGE
