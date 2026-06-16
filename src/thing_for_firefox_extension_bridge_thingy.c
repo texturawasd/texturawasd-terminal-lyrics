@@ -383,45 +383,95 @@ static char* firefox_http_get_metadata(void) {
 }
 
 str firefox_get_artist(void) {
-    char *json = firefox_http_get_metadata();
-    if (!json) {
-        #ifdef _DEBUG
-        fprintf(stderr, "DEBUG: firefox_get_artist - no JSON response\n");
-        #endif
-        return str_create("");
+    int max_retries = 15;
+    int retry_delay_ms = 100;
+
+    for (int attempt = 0; attempt < max_retries; attempt++) {
+        char *json = firefox_http_get_metadata();
+        if (!json) {
+            #ifdef _DEBUG
+            if (attempt == 0) {
+                fprintf(stderr, "DEBUG: firefox_get_artist - no JSON response, retrying...\n");
+            }
+            #endif
+            if (attempt < max_retries - 1) {
+                usleep(retry_delay_ms * 1000);
+            }
+            continue;
+        }
+
+        char *artist = firefox_extract_json_value(json, "artist");
+
+        /* If we got data, return it */
+        if (artist && strlen(artist) > 0) {
+            #ifdef _DEBUG
+            fprintf(stderr, "DEBUG: firefox_get_artist extracted: '%s' (attempt %d)\n", artist, attempt + 1);
+            #endif
+            free(json);
+            str result = str_create(artist);
+            free(artist);
+            return result;
+        }
+
+        /* Empty artist, retry unless this was the last attempt */
+        if (artist) free(artist);
+        free(json);
+
+        if (attempt < max_retries - 1) {
+            usleep(retry_delay_ms * 1000);
+        }
     }
 
-    char *artist = firefox_extract_json_value(json, "artist");
     #ifdef _DEBUG
-    fprintf(stderr, "DEBUG: firefox_get_artist extracted: '%s'\n", artist ? artist : "(null)");
+    fprintf(stderr, "DEBUG: firefox_get_artist - gave up after %d attempts\n", max_retries);
     #endif
-
-    free(json);
-
-    str result = str_create(artist ? artist : "");
-    if (artist) free(artist);
-    return result;
+    return str_create("");
 }
 
 str firefox_get_title(void) {
-    char *json = firefox_http_get_metadata();
-    if (!json) {
-        #ifdef _DEBUG
-        fprintf(stderr, "DEBUG: firefox_get_title - no JSON response\n");
-        #endif
-        return str_create("");
+    int max_retries = 15;
+    int retry_delay_ms = 100;
+
+    for (int attempt = 0; attempt < max_retries; attempt++) {
+        char *json = firefox_http_get_metadata();
+        if (!json) {
+            #ifdef _DEBUG
+            if (attempt == 0) {
+                fprintf(stderr, "DEBUG: firefox_get_title - no JSON response, retrying...\n");
+            }
+            #endif
+            if (attempt < max_retries - 1) {
+                usleep(retry_delay_ms * 1000);
+            }
+            continue;
+        }
+
+        char *title = firefox_extract_json_value(json, "title");
+
+        /* If we got data, return it */
+        if (title && strlen(title) > 0) {
+            #ifdef _DEBUG
+            fprintf(stderr, "DEBUG: firefox_get_title extracted: '%s' (attempt %d)\n", title, attempt + 1);
+            #endif
+            free(json);
+            str result = str_create(title);
+            free(title);
+            return result;
+        }
+
+        /* Empty title, retry unless this was the last attempt */
+        if (title) free(title);
+        free(json);
+
+        if (attempt < max_retries - 1) {
+            usleep(retry_delay_ms * 1000);
+        }
     }
 
-    char *title = firefox_extract_json_value(json, "title");
     #ifdef _DEBUG
-    fprintf(stderr, "DEBUG: firefox_get_title extracted: '%s'\n", title ? title : "(null)");
+    fprintf(stderr, "DEBUG: firefox_get_title - gave up after %d attempts\n", max_retries);
     #endif
-
-    free(json);
-
-    str result = str_create(title ? title : "");
-    if (title) free(title);
-    return result;
+    return str_create("");
 }
 
 double firefox_get_position(void) {

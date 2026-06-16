@@ -55,8 +55,8 @@ int main(int argc, char **argv) {
     /* Normal client mode (with optional Firefox bridge support) */
 
     #ifdef _FIREFOX_EXTENSION_BRIDGE
-    /* Wait a moment for Firefox extension to send metadata via POST request */
-    usleep(200000);  /* 200ms */
+    /* Give extension a brief moment to start sending data */
+    usleep(50000);  /* 50ms */
     #endif
 
     #ifdef _DEBUG
