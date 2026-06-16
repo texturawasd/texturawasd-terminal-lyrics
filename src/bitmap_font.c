@@ -366,6 +366,17 @@ static void init_font(void) {
         0b00001, 0b00010, 0b00010, 0b00100, 0b01000, 0b10000, 0b10000
     }};
 
+    /* Inverted punctuation (Spanish/Catalan) */
+    /* ¡ - inverted exclamation mark */
+    add_glyph(0x00A1, &(Glyph){.width = 2, .height = 7, .rows = {
+        0b11, 0b11, 0b00, 0b11, 0b11, 0b11, 0b11
+    }});
+
+    /* ¿ - inverted question mark */
+    add_glyph(0x00BF, &(Glyph){.width = 5, .height = 7, .rows = {
+        0b00100, 0b00000, 0b00010, 0b00100, 0b01000, 0b10001, 0b01110
+    }});
+
     /* Cyrillic uppercase letters */
     /* А */
     add_glyph(0x0410, &(Glyph){.width = 5, .height = 7, .rows = {
