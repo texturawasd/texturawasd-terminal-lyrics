@@ -19,8 +19,8 @@
 #include "../common_utils/args.h"
 #endif
 
-#include "bitmap_font.h"
 #include "song_utils.h"
+#include "lyrics.h"
 
 #ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
 #include "thing_for_firefox_extension_bridge_thingy.h"
@@ -65,7 +65,6 @@ int main(int argc, char **argv) {
 
     /* Normal client mode (with optional Firefox bridge support) */
 
-    restart:
     #ifdef _FIREFOX_EXTENSION_BRIDGE
     /* Give extension a brief moment to start sending data */
     usleep(50000);  /* 50ms */
@@ -151,112 +150,8 @@ int main(int argc, char **argv) {
     }
 
     /* Display lyrics */
-    if (lyrics.data && lyrics.len > 0) {
-        #if defined(_DEBUG) || defined(_JUST_SHOW_ALL_LYRICS)
-        /* Debug mode or explicit flag: show all lyrics */
-        printf("\n%s\n", lyrics.data);
-        #else
-        /* Normal mode: continuously update current lyric line based on position */
-        printf("\n");
-        fflush(stdout);
 
-        str prev_line = str_create("");
-        int update_check = 0;
-
-        while (1) {
-            /* Get current position */
-            position = get_current_position();
-
-            /* Get current lyric line */
-            str current_line = get_current_lyric_line(lyrics.data, position);
-
-            /* Only print if line changed */
-            if (!current_line.data || !prev_line.data ||
-                strcmp(current_line.data ? current_line.data : "",
-                       prev_line.data ? prev_line.data : "") != 0) {
-
-                if (pretty_mode) {
-                    /* Pretty mode: use bitmap font with Unicode blocks */
-                    printf("\033[2J\033[H");  /* Clear screen and move cursor to top */
-
-                    if (current_line.data && current_line.len > 0) {
-                        /* Get terminal height */
-                        int term_height = 24;
-                        char *height_str = capture_output("tput lines 2>/dev/null");
-                        if (height_str) {
-                            term_height = atoi(height_str);
-                            free(height_str);
-                            if (term_height < 10) term_height = 24;
-                        }
-
-                        /* Bitmap font is 7 rows high, calculate vertical padding */
-                        int vert_padding = (term_height - 7) / 2;
-                        if (vert_padding < 0) vert_padding = 0;
-
-                        /* Print blank lines for vertical centering */
-                        for (int i = 0; i < vert_padding; i++) printf("\n");
-
-                        /* Render bitmap text (already handles horizontal centering) */
-                        render_bitmap_text(current_line.data);
-                    }
-                    fflush(stdout);
-                } else {
-                    /* Normal mode: print with timestamp */
-                    if (current_line.data && current_line.len > 0) {
-                        printf("[%.2f sec]  %s\n", position, current_line.data);
-                    } else {
-                        printf("[%.2f sec]\n", position);
-                    }
-                    fflush(stdout);
-                }
-
-                /* Update previous line tracker */
-                if (prev_line.data) str_destroy(&prev_line);
-                prev_line = str_create(current_line.data ? current_line.data : "");
-            }
-
-            if (current_line.data) {
-                str_destroy(&current_line);
-            }
-
-            /* Check for song change every 10 updates (~1 second with default sleep) */
-            update_check++;
-            if (update_check >= 10) {
-                update_check = 0;
-                str new_artist = get_artist();
-                str new_title = get_title();
-
-                /* If song changed, break loop to reload */
-                if ((new_artist.data && !artist.data) || (!new_artist.data && artist.data) ||
-                    (new_artist.data && artist.data && strcmp(new_artist.data, artist.data) != 0) ||
-                    (new_title.data && !title.data) || (!new_title.data && title.data) ||
-                    (new_title.data && title.data && strcmp(new_title.data, title.data) != 0)) {
-                    #ifdef _DEBUG
-                    fprintf(stderr, "DEBUG: Song changed, restarting...\n");
-                    #endif
-                    if (artist.data) str_destroy(&artist);
-                    if (title.data) str_destroy(&title);
-                    str_destroy(&new_artist);
-                    str_destroy(&new_title);
-                    str_destroy(&prev_line);
-                    break;
-                }
-
-                if (new_artist.data) str_destroy(&new_artist);
-                if (new_title.data) str_destroy(&new_title);
-            }
-
-            /* Update every 100ms */
-            usleep(100000);
-        }
-
-        if (prev_line.data) str_destroy(&prev_line);
-        str_destroy(&lyrics);
-
-        /* Restart the program to get new song's lyrics */
-        goto restart;
-        #endif
-    }
+    display_lyrics(lyrics, artist, title, pretty_mode);
 
     if (artist.data) str_destroy(&artist);
     if (title.data) str_destroy(&title);
