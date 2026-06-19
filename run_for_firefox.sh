@@ -15,8 +15,25 @@ for arg in "$@"; do
     esac
 done
 
-cc $compiler_flags -D_FIREFOX_EXTENSION_BRIDGE -D_OPTS -ljansson -lcurl src/main.c src/bitmap_font.c -o bin
-cc $compiler_flags -D_FIREFOX_EXTENSION_BRIDGE -D_FIREFOX_EXTENSION_BRIDGE_SERVER -D_OPTS -ljansson -lcurl src/main.c src/bitmap_font.c -o server
+cc $compiler_flags -D_FIREFOX_EXTENSION_BRIDGE -D_OPTS -ljansson -lcurl \
+  common_utils/src/strings.c \
+  common_utils/src/process_utils.c \
+  common_utils/src/have.c \
+  common_utils/src/path_utils.c \
+  common_utils/src/file_utils.c \
+  common_utils/src/args.c \
+  src/utils.c src/song_utils.c src/lyrics.c \
+  src/main.c src/bitmap_font.c -o bin
+
+cc $compiler_flags -D_FIREFOX_EXTENSION_BRIDGE -D_FIREFOX_EXTENSION_BRIDGE_SERVER -D_OPTS -ljansson -lcurl \
+  common_utils/src/strings.c \
+  common_utils/src/process_utils.c \
+  common_utils/src/have.c \
+  common_utils/src/path_utils.c \
+  common_utils/src/file_utils.c \
+  common_utils/src/args.c \
+  src/utils.c src/song_utils.c src/lyrics.c \
+  src/main.c src/bitmap_font.c -o server
 
 ./server &
 ./bin $binary_args

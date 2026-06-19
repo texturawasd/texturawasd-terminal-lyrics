@@ -1,8 +1,11 @@
-#include "../common_utils/simple_strings.h"
-#include "../common_utils/process_utils.h"
-#include "../common_utils/have.h"
 #include "utils.h"
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
 
+#ifdef _FIREFOX_EXTENSION_BRIDGE
+#include "thing_for_firefox_extension_bridge_thingy.h"
+#endif
 
 /* Get currently playing song metadata from playerctl */
 str get_current_song(void) {

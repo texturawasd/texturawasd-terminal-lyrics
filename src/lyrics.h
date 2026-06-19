@@ -4,9 +4,6 @@
 #include <stdio.h>
 #include "song_utils.h"
 #include "bitmap_font.h"
-#include "../common_utils/simple_strings.h"
-
-#include "lyrics.c"
 
 void display_lyrics(str lyrics, str artist, str title, int pretty_mode);
 

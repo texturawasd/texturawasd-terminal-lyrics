@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
 #include "song_utils.h"
 #include "bitmap_font.h"
-#include "../common_utils/simple_strings.h"
 
 
 /* Helper function to wrap text to terminal width */

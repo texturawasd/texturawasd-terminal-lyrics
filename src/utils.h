@@ -2,7 +2,11 @@
 #define UTILS_H
 
 #include "../common_utils/simple_strings.h"
-#include "utils.c"
+#include "../common_utils/have.h"
+#include "../common_utils/path_utils.h"
+#include "../common_utils/file_utils.h"
+#include "../common_utils/args.h"
+#include "../common_utils/process_utils.h"
 
 str get_figlet_tool(void);
 #ifdef _DEBUG
