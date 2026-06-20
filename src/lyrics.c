@@ -4,7 +4,10 @@
 #include <ctype.h>
 #include <unistd.h>
 #include "song_utils.h"
+
+#ifdef _BITMAP_FONT
 #include "bitmap_font.h"
+#endif
 
 
 /* Helper function to wrap text to terminal width */
@@ -69,7 +72,7 @@ static void print_wrapped_text(const char *prefix, const char *text) {
     printf("\n");
 }
 
-void display_lyrics(str lyrics, str artist, str title, int pretty_mode) {
+void display_lyrics(str lyrics, str artist, str title, int pretty_mode, int normal_mode_print_timestamps) {
     restart:;
     double position = 0.0;
     if (lyrics.data && lyrics.len > 0) {
@@ -97,10 +100,12 @@ void display_lyrics(str lyrics, str artist, str title, int pretty_mode) {
                        prev_line.data ? prev_line.data : "") != 0) {
 
                 if (pretty_mode) {
-                    /* Pretty mode: use bitmap font with Unicode blocks */
+                    /* Pretty mode: use bitmap font or figlet */
                     printf("\033[2J\033[H");  /* Clear screen and move cursor to top */
 
                     if (current_line.data && current_line.len > 0) {
+#ifdef _BITMAP_FONT
+                        /* Use bitmap font rendering */
                         /* Get terminal dimensions */
                         int term_height = 24;
                         int term_width = 80;
@@ -198,8 +203,105 @@ void display_lyrics(str lyrics, str artist, str title, int pretty_mode) {
                         /* Print blank lines below for vertical centering */
                         for (int i = 0; i < bottom_padding; i++) printf("\n");
 
+#else
+                        /* Use figlet for ASCII art rendering */
+                        char cmd[1024];
+                        /* Escape single quotes in the text for shell safety */
+                        char escaped[512] = {0};
+                        int esc_pos = 0;
+                        for (const char *p = current_line.data; *p && esc_pos < 500; p++) {
+                            if (*p == '\'') {
+                                escaped[esc_pos++] = '\'';
+                                escaped[esc_pos++] = '\\';
+                                escaped[esc_pos++] = '\'';
+                                escaped[esc_pos++] = '\'';
+                            } else {
+                                escaped[esc_pos++] = *p;
+                            }
+                        }
+                        escaped[esc_pos] = '\0';
+                        snprintf(cmd, sizeof(cmd), "echo '%s' | figlet -f slant", escaped);
+
+                        /* Get terminal dimensions */
+                        int term_height = 24;
+                        int term_width = 80;
+                        char *height_str = capture_output("tput lines 2>/dev/null");
+                        if (height_str) {
+                            int h = atoi(height_str);
+                            if (h > 10) term_height = h;
+                            free(height_str);
+                        }
+                        char *width_str = capture_output("tput cols 2>/dev/null");
+                        if (width_str) {
+                            int w = atoi(width_str);
+                            if (w > 40) term_width = w;
+                            free(width_str);
+                        }
+
+                        /* Capture figlet output and center it manually */
+                        char figlet_cmd[1024];
+                        snprintf(figlet_cmd, sizeof(figlet_cmd), "%s 2>/dev/null", cmd);
+                        FILE *figlet_pipe = popen(figlet_cmd, "r");
+                        if (figlet_pipe) {
+                            char figlet_output[2048] = {0};
+                            char figlet_line[512];
+                            int line_count = 0;
+                            int max_line_width = 0;
+
+                            /* Read all figlet output */
+                            while (fgets(figlet_line, sizeof(figlet_line), figlet_pipe) && line_count < 20) {
+                                /* Remove trailing newline */
+                                int len = strlen(figlet_line);
+                                if (len > 0 && figlet_line[len-1] == '\n') {
+                                    figlet_line[len-1] = '\0';
+                                    len--;
+                                }
+                                if (len > max_line_width) max_line_width = len;
+
+                                strcat(figlet_output, figlet_line);
+                                strcat(figlet_output, "\n");
+                                line_count++;
+                            }
+                            pclose(figlet_pipe);
+
+                            /* Estimate figlet height */
+                            int figlet_height = line_count + 2;
+                            int total_padding = term_height - figlet_height;
+                            int top_padding = total_padding / 2;
+
+                            /* Print blank lines above for vertical centering */
+                            for (int i = 0; i < top_padding; i++) printf("\n");
+
+                            /* Print figlet output with horizontal centering */
+                            const char *output_ptr = figlet_output;
+                            while (*output_ptr) {
+                                char line[512] = {0};
+                                int line_len = 0;
+                                /* Extract one line */
+                                while (*output_ptr && *output_ptr != '\n' && line_len < 511) {
+                                    line[line_len++] = *output_ptr++;
+                                }
+                                if (*output_ptr == '\n') output_ptr++;
+
+                                /* Calculate horizontal padding */
+                                int horiz_padding = (term_width - line_len) / 2;
+                                if (horiz_padding < 0) horiz_padding = 0;
+
+                                /* Print centered line */
+                                for (int i = 0; i < horiz_padding; i++) printf(" ");
+                                printf("%s\n", line);
+                            }
+
+                            /* Add some spacing after figlet */
+                            printf("\n");
+                        }
+                        fflush(stdout);
+#endif
+
                     }
                     fflush(stdout);
+
+                #if 0
                 } else {
                     /* Normal mode: print with timestamp and wrap long lines */
                     if (current_line.data && current_line.len > 0) {
@@ -229,7 +331,27 @@ void display_lyrics(str lyrics, str artist, str title, int pretty_mode) {
                     }
                     fflush(stdout);
                 }
-
+                #endif
+                } else {
+                    /* Normal mode */
+                    if (current_line.data && current_line.len > 0) {
+                        if (normal_mode_print_timestamps) {
+                            char timestamp[32];
+                            snprintf(timestamp, sizeof(timestamp), "[%.2f sec]  ", position);
+                            print_wrapped_text(timestamp, current_line.data);
+                        } else {
+                            /* Let the terminal handle wrapping */
+                            printf("%s\n", current_line.data);
+                        }
+                    } else {
+                        if (normal_mode_print_timestamps) {
+                            printf("[%.2f sec]\n", position);
+                        } else {
+                            putchar('\n');
+                        }
+                    }
+                    fflush(stdout);
+                }
                 /* Update previous line tracker */
                 if (prev_line.data) str_destroy(&prev_line);
                 prev_line = str_create(current_line.data ? current_line.data : "");

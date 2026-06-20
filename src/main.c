@@ -11,6 +11,15 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "../common_utils/simple_strings.h"
+#include "../common_utils/path_utils.h"
+#include "../common_utils/file_utils.h"
+
+#if defined(_OPTS)
+#include "../common_utils/args.h"
+#endif
+
+#include "bitmap_font.h"
 #include "song_utils.h"
 #include "lyrics.h"
 
@@ -27,9 +36,12 @@ int main(int argc, char **argv) {
     /* Set cache directory */
     str cache_dir;
     int pretty_mode = 0;
+    int normal_mode_print_timestamps = 0;
 
     #ifdef _OPTS
     pretty_mode = arg_is_present("pretty", argc, &*argv);
+
+    normal_mode_print_timestamps = arg_is_present("print-timestamps", argc, &*argv);
 
     cache_dir = arg_is_present("cache_dir", argc, &*argv) ? get_arg_value("cache_dir", argc, &*argv) : NULL_STRING;
     #ifdef _DEBUG
@@ -143,7 +155,7 @@ int main(int argc, char **argv) {
 
     /* Display lyrics */
 
-    display_lyrics(lyrics, artist, title, pretty_mode);
+    display_lyrics(lyrics, artist, title, pretty_mode, normal_mode_print_timestamps);
 
     if (artist.data) str_destroy(&artist);
     if (title.data) str_destroy(&title);
