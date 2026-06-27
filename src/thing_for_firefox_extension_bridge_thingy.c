@@ -1,15 +1,15 @@
 
 #ifdef _FIREFOX_EXTENSION_BRIDGE
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <signal.h>
-#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <netinet/in.h>
+#include <unistd.h>
 
 #include "../common_utils/simple_strings.h"
 #include "thing_for_firefox_extension_bridge_thingy.h"
@@ -23,17 +23,18 @@ void firefox_bridge_cleanup(int sig) {
 }
 
 /* Simple JSON string value parser */
-static char* firefox_extract_json_value(const char *json, const char *key) {
-    if (!json || !key) return NULL;
+static char *firefox_extract_json_value(const char *json, const char *key) {
+    if (!json || !key)
+        return NULL;
 
     char search_pattern[256];
     snprintf(search_pattern, sizeof(search_pattern), "\"%s\":\"", key);
 
     const char *start = strstr(json, search_pattern);
     if (!start) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Key '%s' not found in JSON\n", key);
-        #endif
+#endif
         return NULL;
     }
 
@@ -51,12 +52,13 @@ static char* firefox_extract_json_value(const char *json, const char *key) {
 
     size_t len = end - start;
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: Extracted key '%s': len=%zu, value='%.*s'\n", key, len, (int)len, start);
-    #endif
+#endif
 
     char *result = malloc(len + 1);
-    if (!result) return NULL;
+    if (!result)
+        return NULL;
 
     if (len > 0) {
         memcpy(result, start, len);
@@ -68,10 +70,14 @@ static char* firefox_extract_json_value(const char *json, const char *key) {
 /* Free old metadata and store new values */
 static void firefox_store_metadata(const char *title, const char *artist,
                                    const char *album, const char *url, double position) {
-    if (firefox_data.title) free(firefox_data.title);
-    if (firefox_data.artist) free(firefox_data.artist);
-    if (firefox_data.album) free(firefox_data.album);
-    if (firefox_data.url) free(firefox_data.url);
+    if (firefox_data.title)
+        free(firefox_data.title);
+    if (firefox_data.artist)
+        free(firefox_data.artist);
+    if (firefox_data.album)
+        free(firefox_data.album);
+    if (firefox_data.url)
+        free(firefox_data.url);
 
     firefox_data.title = title ? strdup(title) : NULL;
     firefox_data.artist = artist ? strdup(artist) : NULL;
@@ -85,32 +91,32 @@ static void send_http_response(int client, const char *body, const char *content
     size_t body_len = strlen(body);
     char header[512];
     int n = snprintf(header, sizeof(header),
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: %s\r\n"
-        "Content-Length: %zu\r\n"
-        "Access-Control-Allow-Origin: *\r\n"
-        "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
-        "Access-Control-Allow-Headers: Content-Type\r\n"
-        "Connection: close\r\n"
-        "\r\n",
-        content_type, body_len);
+                     "HTTP/1.1 200 OK\r\n"
+                     "Content-Type: %s\r\n"
+                     "Content-Length: %zu\r\n"
+                     "Access-Control-Allow-Origin: *\r\n"
+                     "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
+                     "Access-Control-Allow-Headers: Content-Type\r\n"
+                     "Connection: close\r\n"
+                     "\r\n",
+                     content_type, body_len);
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: send_http_response - headers: %d bytes, body: %zu bytes\n", n, body_len);
     fprintf(stderr, "DEBUG: send_http_response - body content: %s\n", body);
-    #endif
+#endif
 
     ssize_t written = write(client, header, n);
     if (written != n) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Warning - only wrote %zd of %d header bytes\n", written, n);
-        #endif
+#endif
     }
     written = write(client, body, body_len);
     if (written != (ssize_t)body_len) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Warning - only wrote %zd of %zu body bytes\n", written, body_len);
-        #endif
+#endif
     }
 }
 
@@ -129,12 +135,12 @@ static void send_cors_preflight(int client) {
 /* Get metadata as JSON response */
 static void firefox_get_metadata_json(char *buffer, size_t size) {
     snprintf(buffer, size,
-        "{\"title\":\"%s\",\"artist\":\"%s\",\"album\":\"%s\",\"url\":\"%s\",\"position\":%.2f}",
-        firefox_data.title ? firefox_data.title : "",
-        firefox_data.artist ? firefox_data.artist : "",
-        firefox_data.album ? firefox_data.album : "",
-        firefox_data.url ? firefox_data.url : "",
-        firefox_data.position);
+             "{\"title\":\"%s\",\"artist\":\"%s\",\"album\":\"%s\",\"url\":\"%s\",\"position\":%.2f}",
+             firefox_data.title ? firefox_data.title : "",
+             firefox_data.artist ? firefox_data.artist : "",
+             firefox_data.album ? firefox_data.album : "",
+             firefox_data.url ? firefox_data.url : "",
+             firefox_data.position);
 }
 
 /* Handle incoming HTTP requests */
@@ -144,12 +150,12 @@ static void firefox_handle_request(int client, const char *request) {
     char path[256] = {0};
     sscanf(request, "%15s %255s", method, path);
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: Received %s request for %s\n", method, path);
     fprintf(stderr, "DEBUG: Current metadata - artist: '%s', title: '%s'\n",
-        firefox_data.artist ? firefox_data.artist : "",
-        firefox_data.title ? firefox_data.title : "");
-    #endif
+            firefox_data.artist ? firefox_data.artist : "",
+            firefox_data.title ? firefox_data.title : "");
+#endif
 
     /* Handle CORS preflight */
     if (strcmp(method, "OPTIONS") == 0) {
@@ -163,9 +169,9 @@ static void firefox_handle_request(int client, const char *request) {
         if (body_start) {
             body_start += 4;
 
-            #ifdef _DEBUG
+#ifdef _DEBUG
             fprintf(stderr, "DEBUG: POST body: %s\n", body_start);
-            #endif
+#endif
 
             /* Parse JSON from POST body */
             char *title = firefox_extract_json_value(body_start, "title");
@@ -181,10 +187,10 @@ static void firefox_handle_request(int client, const char *request) {
                 free(pos_str);
             }
 
-            #ifdef _DEBUG
+#ifdef _DEBUG
             fprintf(stderr, "DEBUG: Parsed - title: '%s', artist: '%s', position: %.2f\n",
-                title ? title : "", artist ? artist : "", position);
-            #endif
+                    title ? title : "", artist ? artist : "", position);
+#endif
 
             /* Store and respond */
             firefox_store_metadata(title, artist, album, url, position);
@@ -193,27 +199,31 @@ static void firefox_handle_request(int client, const char *request) {
             firefox_get_metadata_json(response_body, sizeof(response_body));
             send_http_response(client, response_body, "application/json");
 
-            if (title) free(title);
-            if (artist) free(artist);
-            if (album) free(album);
-            if (url) free(url);
+            if (title)
+                free(title);
+            if (artist)
+                free(artist);
+            if (album)
+                free(album);
+            if (url)
+                free(url);
         }
     } else if (strcmp(method, "GET") == 0 && strcmp(path, "/media") == 0) {
         /* Return current metadata */
         char response_body[BUFFER_SIZE];
         firefox_get_metadata_json(response_body, sizeof(response_body));
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Sending GET response: %s\n", response_body);
-        #endif
+#endif
         send_http_response(client, response_body, "application/json");
     } else {
         /* 404 response */
         const char *not_found = "HTTP/1.1 404 Not Found\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: 9\r\n"
-            "Access-Control-Allow-Origin: *\r\n"
-            "Connection: close\r\n"
-            "\r\nNot Found";
+                                "Content-Type: text/plain\r\n"
+                                "Content-Length: 9\r\n"
+                                "Access-Control-Allow-Origin: *\r\n"
+                                "Connection: close\r\n"
+                                "\r\nNot Found";
         write(client, not_found, strlen(not_found));
     }
 }
@@ -240,7 +250,7 @@ int firefox_bridge_server(void) {
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(FIREFOX_BRIDGE_PORT);
 
-    if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         perror("bind");
         close(server_fd);
         return EXIT_FAILURE;
@@ -257,12 +267,13 @@ int firefox_bridge_server(void) {
 
     while (bridge_running) {
         int client = accept(server_fd, NULL, NULL);
-        if (client < 0) continue;
+        if (client < 0)
+            continue;
 
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: New client connection\n");
         fflush(stderr);
-        #endif
+#endif
 
         char request[BUFFER_SIZE] = {0};
         ssize_t n = read(client, request, BUFFER_SIZE - 1);
@@ -270,9 +281,9 @@ int firefox_bridge_server(void) {
             request[n] = '\0';
             firefox_handle_request(client, request);
         } else {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             fprintf(stderr, "DEBUG: No data read from client\n");
-            #endif
+#endif
         }
 
         close(client);
@@ -281,21 +292,25 @@ int firefox_bridge_server(void) {
     close(server_fd);
 
     /* Cleanup */
-    if (firefox_data.title) free(firefox_data.title);
-    if (firefox_data.artist) free(firefox_data.artist);
-    if (firefox_data.album) free(firefox_data.album);
-    if (firefox_data.url) free(firefox_data.url);
+    if (firefox_data.title)
+        free(firefox_data.title);
+    if (firefox_data.artist)
+        free(firefox_data.artist);
+    if (firefox_data.album)
+        free(firefox_data.album);
+    if (firefox_data.url)
+        free(firefox_data.url);
 
     return EXIT_SUCCESS;
 }
 
 /* Getter functions for utils.c to call - connect to server and fetch data */
-static char* firefox_http_get_metadata(void) {
+static char *firefox_http_get_metadata(void) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Firefox bridge socket creation failed\n");
-        #endif
+#endif
         return NULL;
     }
 
@@ -308,21 +323,21 @@ static char* firefox_http_get_metadata(void) {
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr.sin_port = htons(FIREFOX_BRIDGE_PORT);
 
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-        #ifdef _DEBUG
+    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Firefox bridge connection failed\n");
-        #endif
+#endif
         close(sock);
         return NULL;
     }
 
     /* Send GET request */
     const char *request = "GET /media HTTP/1.1\r\nHost: 127.0.0.1:3847\r\n"
-                         "Connection: close\r\n\r\n";
+                          "Connection: close\r\n\r\n";
     if (write(sock, request, strlen(request)) < 0) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Firefox bridge write failed\n");
-        #endif
+#endif
         close(sock);
         return NULL;
     }
@@ -346,38 +361,39 @@ static char* firefox_http_get_metadata(void) {
     close(sock);
 
     if (total_read <= 0) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Firefox bridge read failed or no data\n");
-        #endif
+#endif
         free(response);
         return NULL;
     }
 
     response[total_read] = '\0';
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: Firefox bridge raw response (%zd bytes total):\n", total_read);
     fprintf(stderr, "DEBUG: HEX DUMP: ");
     for (ssize_t i = 0; i < total_read && i < 300; i++) {
         fprintf(stderr, "%02x ", (unsigned char)response[i]);
-        if ((i + 1) % 32 == 0) fprintf(stderr, "\n              ");
+        if ((i + 1) % 32 == 0)
+            fprintf(stderr, "\n              ");
     }
     fprintf(stderr, "\n");
-    #endif
+#endif
 
     /* Find the body (after double CRLF) */
     char *body_start = strstr(response, "\r\n\r\n");
     if (body_start) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Found CRLF separator at offset %ld\n", body_start - response);
         fprintf(stderr, "DEBUG: Bytes after CRLF separator: %zd\n", total_read - (body_start - response) - 4);
-        #endif
+#endif
 
         body_start += 4;
 
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Extracted body (%zu chars): %s\n", strlen(body_start), body_start);
-        #endif
+#endif
 
         char *body = malloc(strlen(body_start) + 1);
         strcpy(body, body_start);
@@ -385,9 +401,9 @@ static char* firefox_http_get_metadata(void) {
         return body;
     }
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: No \\r\\n\\r\\n found in response\n");
-    #endif
+#endif
     free(response);
     return NULL;
 }
@@ -399,11 +415,11 @@ str firefox_get_artist(void) {
     for (int attempt = 0; attempt < max_retries; attempt++) {
         char *json = firefox_http_get_metadata();
         if (!json) {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             if (attempt == 0) {
                 fprintf(stderr, "DEBUG: firefox_get_artist - no JSON response, retrying...\n");
             }
-            #endif
+#endif
             if (attempt < max_retries - 1) {
                 usleep(retry_delay_ms * 1000);
             }
@@ -414,9 +430,9 @@ str firefox_get_artist(void) {
 
         /* If we got data, return it */
         if (artist && strlen(artist) > 0) {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             fprintf(stderr, "DEBUG: firefox_get_artist extracted: '%s' (attempt %d)\n", artist, attempt + 1);
-            #endif
+#endif
             free(json);
             str result = str_create(artist);
             free(artist);
@@ -424,7 +440,8 @@ str firefox_get_artist(void) {
         }
 
         /* Empty artist, retry unless this was the last attempt */
-        if (artist) free(artist);
+        if (artist)
+            free(artist);
         free(json);
 
         if (attempt < max_retries - 1) {
@@ -432,9 +449,9 @@ str firefox_get_artist(void) {
         }
     }
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: firefox_get_artist - gave up after %d attempts\n", max_retries);
-    #endif
+#endif
     return str_create("");
 }
 
@@ -445,11 +462,11 @@ str firefox_get_title(void) {
     for (int attempt = 0; attempt < max_retries; attempt++) {
         char *json = firefox_http_get_metadata();
         if (!json) {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             if (attempt == 0) {
                 fprintf(stderr, "DEBUG: firefox_get_title - no JSON response, retrying...\n");
             }
-            #endif
+#endif
             if (attempt < max_retries - 1) {
                 usleep(retry_delay_ms * 1000);
             }
@@ -460,9 +477,9 @@ str firefox_get_title(void) {
 
         /* If we got data, return it */
         if (title && strlen(title) > 0) {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             fprintf(stderr, "DEBUG: firefox_get_title extracted: '%s' (attempt %d)\n", title, attempt + 1);
-            #endif
+#endif
             free(json);
             str result = str_create(title);
             free(title);
@@ -470,7 +487,8 @@ str firefox_get_title(void) {
         }
 
         /* Empty title, retry unless this was the last attempt */
-        if (title) free(title);
+        if (title)
+            free(title);
         free(json);
 
         if (attempt < max_retries - 1) {
@@ -478,18 +496,18 @@ str firefox_get_title(void) {
         }
     }
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: firefox_get_title - gave up after %d attempts\n", max_retries);
-    #endif
+#endif
     return str_create("");
 }
 
 double firefox_get_position(void) {
     char *json = firefox_http_get_metadata();
     if (!json) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: firefox_get_position - no JSON response\n");
-        #endif
+#endif
         return 0.0;
     }
 
@@ -497,9 +515,9 @@ double firefox_get_position(void) {
     double position = 0.0;
     if (pos_str) {
         position = strtod(pos_str, NULL);
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: firefox_get_position extracted: %.2f\n", position);
-        #endif
+#endif
         free(pos_str);
     }
 
@@ -508,4 +526,3 @@ double firefox_get_position(void) {
 }
 
 #endif /* _FIREFOX_EXTENSION_BRIDGE */
-

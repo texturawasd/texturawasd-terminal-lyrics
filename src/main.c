@@ -2,26 +2,26 @@
 #error This program is only supported on Linux.
 #endif
 
-#include <stdio.h>
 #include <curl/curl.h>
 #include <jansson.h>
-#include <unistd.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
-#include "../common_utils/simple_strings.h"
-#include "../common_utils/path_utils.h"
 #include "../common_utils/file_utils.h"
+#include "../common_utils/path_utils.h"
+#include "../common_utils/simple_strings.h"
 
 #if defined(_OPTS)
 #include "../common_utils/args.h"
 #endif
 
 #include "bitmap_font.h"
-#include "song_utils.h"
 #include "lyrics.h"
+#include "song_utils.h"
 
 #ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
 #include "thing_for_firefox_extension_bridge_thingy.h"
@@ -38,45 +38,45 @@ int main(int argc, char **argv) {
     int pretty_mode = 0;
     int normal_mode_print_timestamps = 0;
 
-    #ifdef _OPTS
+#ifdef _OPTS
     pretty_mode = arg_is_present("pretty", argc, &*argv);
 
     normal_mode_print_timestamps = arg_is_present("print-timestamps", argc, &*argv);
 
     cache_dir = arg_is_present("cache_dir", argc, &*argv) ? get_arg_value("cache_dir", argc, &*argv) : NULL_STRING;
-    #ifdef _DEBUG
+#ifdef _DEBUG
     printf("DEBUG: pretty_mode: %d\n", pretty_mode);
-    #endif
+#endif
     /* Fallback to default if not provided */
     if (!cache_dir.data || cache_dir.len == 0) {
         cache_dir = expand_home("~/.cache/texturawasd-terminal-lyrics");
     }
-    #else
+#else
     cache_dir = expand_home("~/.cache/texturawasd-terminal-lyrics");
-    #endif
+#endif
 
     dir_exists(cache_dir.data) || mkdir(cache_dir.data, 0755);
 
-    #if !defined(_OPTS)
+#if !defined(_OPTS)
     (void)argc;
     (void)argv;
-    #endif
+#endif
 
-    #ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
+#ifdef _FIREFOX_EXTENSION_BRIDGE_SERVER
     /* Build and run the Firefox bridge server only */
     return firefox_bridge_server();
-    #endif
+#endif
 
     /* Normal client mode (with optional Firefox bridge support) */
 
-    #ifdef _FIREFOX_EXTENSION_BRIDGE
+#ifdef _FIREFOX_EXTENSION_BRIDGE
     /* Give extension a brief moment to start sending data */
-    usleep(50000);  /* 50ms */
-    #endif
+    usleep(50000); /* 50ms */
+#endif
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     debug_all_metadata();
-    #endif
+#endif
     str artist = get_artist();
     str title = get_title();
     double position = get_current_position();
@@ -88,11 +88,11 @@ int main(int argc, char **argv) {
         str_rtrim(&title);
     }
 
-    #ifdef _DEBUG
+#ifdef _DEBUG
     /* Debug: print what we got */
     fprintf(stderr, "DEBUG artist.data: '%s', artist.len: %zu\n", artist.data ? artist.data : "(null)", artist.len);
     fprintf(stderr, "DEBUG title.data: '%s', title.len: %zu\n", title.data ? title.data : "(null)", title.len);
-    #endif
+#endif
 
     /* Display artist - title, or just title if artist is empty */
     if (artist.data && artist.len > 0) {
@@ -119,17 +119,17 @@ int main(int argc, char **argv) {
 
         snprintf(cache_file, sizeof(cache_file), "%s/%s - %s.txt", cache_dir.data, artist_safe, title_safe);
 
-        #ifdef _DEBUG
+#ifdef _DEBUG
         printf("DEBUG: Cache file path: '%s'\n", cache_file);
-        #endif
+#endif
     }
 
     /* Try to load from cache first */
     str lyrics = NULL_STRING;
     if (cache_file[0] != '\0' && file_exists(cache_file)) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         printf("DEBUG: Loading lyrics from cache: %s\n", cache_file);
-        #endif
+#endif
         lyrics = read_entire_file(cache_file);
     }
 
@@ -139,15 +139,15 @@ int main(int argc, char **argv) {
 
         /* Cache the newly fetched lyrics */
         if (lyrics.data && lyrics.len > 0 && cache_file[0] != '\0') {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             printf("DEBUG: Caching lyrics to: %s\n", cache_file);
-            #endif
+#endif
 
             /* Ensure cache directory exists */
             if (mkdir(cache_dir.data, 0755) < 0) {
-                #ifdef _DEBUG
+#ifdef _DEBUG
                 perror("DEBUG: mkdir failed");
-                #endif
+#endif
             }
             write_entire_file(cache_file, lyrics.data);
         }
@@ -157,8 +157,12 @@ int main(int argc, char **argv) {
 
     display_lyrics(lyrics, artist, title, pretty_mode, normal_mode_print_timestamps);
 
-    if (artist.data) str_destroy(&artist);
-    if (title.data) str_destroy(&title);
+    if (artist.data) {
+        str_destroy(&artist);
+    }
+    if (title.data) {
+        str_destroy(&title);
+    }
 
     return 0;
 }

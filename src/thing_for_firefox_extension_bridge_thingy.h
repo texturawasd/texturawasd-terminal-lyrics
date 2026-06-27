@@ -16,7 +16,7 @@ typedef struct {
     double position;
 } firefox_metadata;
 
-static char* firefox_extract_json_value(const char *json, const char *key);
+static char *firefox_extract_json_value(const char *json, const char *key);
 
 static void firefox_store_metadata(const char *title, const char *artist,
                                    const char *album, const char *url, double position);
@@ -31,7 +31,7 @@ static void firefox_handle_request(int client, const char *request);
 
 int firefox_bridge_server(void);
 
-static char* firefox_http_get_metadata(void);
+static char *firefox_http_get_metadata(void);
 
 str firefox_get_artist(void);
 

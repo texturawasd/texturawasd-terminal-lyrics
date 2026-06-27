@@ -1,8 +1,8 @@
 #ifndef DEFS_H
 #define DEFS_H
 
-#include "../common_utils/simple_strings.h"
 #include "../common_utils/have.h"
+#include "../common_utils/simple_strings.h"
 
 /* determines `figlet` or `toilet`, defaults to `toilet` */
 str get_figlet_tool(void);

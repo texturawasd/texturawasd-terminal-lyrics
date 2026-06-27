@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include "../common_utils/args.h"
+#include <stdio.h>
 
 void do_options(int argc, char **argv) {
     if (argc == 1) {
@@ -9,4 +9,3 @@ void do_options(int argc, char **argv) {
         puts("help asked (unimplemented)"); /* help not yet implemented */
     }
 }
-

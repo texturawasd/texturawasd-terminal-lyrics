@@ -1,8 +1,8 @@
 #ifndef LYRICS_H
 #define LYRICS_H
 
-#include <stdio.h>
 #include "song_utils.h"
+#include <stdio.h>
 #ifdef _BITMAP_FONT
 #include "bitmap_font.h"
 #endif

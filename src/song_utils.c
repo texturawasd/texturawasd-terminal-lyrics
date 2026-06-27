@@ -1,7 +1,7 @@
 #include "utils.h"
-#include <string.h>
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <string.h>
 
 #ifdef _FIREFOX_EXTENSION_BRIDGE
 #include "thing_for_firefox_extension_bridge_thingy.h"
@@ -9,7 +9,7 @@
 
 /* Get currently playing song metadata from playerctl */
 str get_current_song(void) {
-    #ifdef _FIREFOX_EXTENSION_BRIDGE
+#ifdef _FIREFOX_EXTENSION_BRIDGE
     str firefox_artist = firefox_get_artist();
     str firefox_title = firefox_get_title();
     if (firefox_artist.len > 0 && firefox_title.len > 0) {
@@ -24,50 +24,50 @@ str get_current_song(void) {
     }
     str_destroy(&firefox_artist);
     str_destroy(&firefox_title);
-    #endif
+#endif
     return str_create(capture_output("playerctl metadata --format '{{artist}} - {{title}}'"));
 }
 
 /* Get artist from playerctl or Firefox bridge */
 str get_artist(void) {
-    #ifdef _FIREFOX_EXTENSION_BRIDGE
+#ifdef _FIREFOX_EXTENSION_BRIDGE
     str firefox_artist = firefox_get_artist();
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: get_artist - firefox returned: '%s' (len %zu)\n",
-        firefox_artist.data ? firefox_artist.data : "(null)", firefox_artist.len);
-    #endif
+            firefox_artist.data ? firefox_artist.data : "(null)", firefox_artist.len);
+#endif
     if (firefox_artist.len > 0) {
         return firefox_artist;
     }
     str_destroy(&firefox_artist);
-    #endif
+#endif
     return str_create(capture_output("playerctl metadata --format '{{artist}}'"));
 }
 
 /* Get title from playerctl or Firefox bridge */
 str get_title(void) {
-    #ifdef _FIREFOX_EXTENSION_BRIDGE
+#ifdef _FIREFOX_EXTENSION_BRIDGE
     str firefox_title = firefox_get_title();
-    #ifdef _DEBUG
+#ifdef _DEBUG
     fprintf(stderr, "DEBUG: get_title - firefox returned: '%s' (len %zu)\n",
-        firefox_title.data ? firefox_title.data : "(null)", firefox_title.len);
-    #endif
+            firefox_title.data ? firefox_title.data : "(null)", firefox_title.len);
+#endif
     if (firefox_title.len > 0) {
         return firefox_title;
     }
     str_destroy(&firefox_title);
-    #endif
+#endif
     return str_create(capture_output("playerctl metadata --format '{{title}}'"));
 }
 
 /* Get current position in seconds from playerctl or Firefox bridge */
 double get_current_position(void) {
-    #ifdef _FIREFOX_EXTENSION_BRIDGE
+#ifdef _FIREFOX_EXTENSION_BRIDGE
     double firefox_pos = firefox_get_position();
     if (firefox_pos > 0.0) {
         return firefox_pos;
     }
-    #endif
+#endif
     str pos_str = str_create(capture_output("playerctl position"));
     if (!pos_str.data) {
         return 0.0;
@@ -79,7 +79,9 @@ double get_current_position(void) {
 
 /* Strip common player suffixes from title */
 str clean_title(const char *title) {
-    if (!title) return str_create("");
+    if (!title) {
+        return str_create("");
+    }
 
     str cleaned = str_create(title);
 
@@ -89,8 +91,7 @@ str clean_title(const char *title) {
         " - YouTube Music",
         " - Spotify",
         " [Audio]",
-        NULL
-    };
+        NULL};
 
     for (int i = 0; suffixes[i]; i++) {
         char *pos = strstr(cleaned.data, suffixes[i]);
@@ -108,9 +109,9 @@ str clean_title(const char *title) {
 /* Fetch lyrics from lrclib API using search endpoint */
 str get_lyrics(const char *artist, const char *title) {
     if (!title || !title[0]) {
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: Missing title - cannot fetch lyrics\n");
-        #endif
+#endif
         return str_create("");
     }
 
@@ -127,22 +128,22 @@ str get_lyrics(const char *artist, const char *title) {
                  "curl -s 'https://lrclib.net/api/get?artist_name=%s&track_name=%s'",
                  encoded_artist.data, encoded_title.data);
 
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: API URL (direct): %s\n", url);
-        #endif
+#endif
 
         str_destroy(&encoded_artist);
         str_destroy(&encoded_title);
 
         char *response = capture_output(url);
         if (response) {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             fprintf(stderr, "DEBUG: API Response: %s\n", response);
-            #endif
+#endif
 
             char *lyrics_start = strstr(response, "\"syncedLyrics\":\"");
             if (lyrics_start) {
-                lyrics_start += 16;  /* skip past "syncedLyrics":" */
+                lyrics_start += 16; /* skip past "syncedLyrics":" */
                 char *extracted = extract_json_string(lyrics_start);
                 if (extracted) {
                     lyrics.data = extracted;
@@ -160,9 +161,9 @@ str get_lyrics(const char *artist, const char *title) {
         if (strcmp(clean.data, "YouTube Music") == 0 ||
             strcmp(clean.data, "Spotify") == 0 ||
             strlen(clean.data) < 3) {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             fprintf(stderr, "DEBUG: Title too generic or short, skipping search\n");
-            #endif
+#endif
             str_destroy(&clean);
             return lyrics;
         }
@@ -174,23 +175,23 @@ str get_lyrics(const char *artist, const char *title) {
                  "curl -s --max-time 5 'https://lrclib.net/api/search?q=%s'",
                  encoded_title.data);
 
-        #ifdef _DEBUG
+#ifdef _DEBUG
         fprintf(stderr, "DEBUG: API URL (search): %s\n", url);
-        #endif
+#endif
 
         str_destroy(&encoded_title);
         str_destroy(&clean);
 
         char *response = capture_output(url);
         if (response) {
-            #ifdef _DEBUG
+#ifdef _DEBUG
             fprintf(stderr, "DEBUG: API Response: %s\n", response);
-            #endif
+#endif
 
             /* Search returns an array; get first result's lyrics */
             char *lyrics_start = strstr(response, "\"syncedLyrics\":\"");
             if (lyrics_start) {
-                lyrics_start += 16;  /* skip past "syncedLyrics":" */
+                lyrics_start += 16; /* skip past "syncedLyrics":" */
                 char *extracted = extract_json_string(lyrics_start);
                 if (extracted) {
                     lyrics.data = extracted;
@@ -198,9 +199,9 @@ str get_lyrics(const char *artist, const char *title) {
                     lyrics.cap = lyrics.len + 1;
                 }
             } else {
-                #ifdef _DEBUG
+#ifdef _DEBUG
                 fprintf(stderr, "DEBUG: No lyrics field found in JSON\n");
-                #endif
+#endif
             }
             free(response);
         }
@@ -227,11 +228,15 @@ static double parse_timestamp(const char *timestamp) {
 
 /* Extract text after timestamp from a lyric line */
 static str extract_lyric_text(const char *line) {
-    if (!line) return str_create("");
+    if (!line) {
+        return str_create("");
+    }
 
     /* Find closing bracket */
     const char *bracket_end = strchr(line, ']');
-    if (!bracket_end) return str_create("");
+    if (!bracket_end) {
+        return str_create("");
+    }
 
     /* Text starts after the bracket */
     const char *text_start = bracket_end + 1;

@@ -1,7 +1,7 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #include "defs.h"
 
@@ -20,7 +20,6 @@ str get_figlet_tool(void) {
     return figlet_tool;
 }
 
-
 #ifdef _DEBUG
 /* Debug: get all available metadata */
 void debug_all_metadata(void) {
@@ -31,10 +30,8 @@ void debug_all_metadata(void) {
         fprintf(stderr, "%s\n", all_meta);
         free(all_meta);
     }
-
 }
 #endif
-
 
 /* Extract a JSON string value, handling escape sequences */
 char *extract_json_string(char *start) {
@@ -44,7 +41,7 @@ char *extract_json_string(char *start) {
     /* Count characters until closing unescaped quote */
     while (*p) {
         if (*p == '\\' && *(p + 1)) {
-            len += 2;  /* skip escape sequence */
+            len += 2; /* skip escape sequence */
             p += 2;
         } else if (*p == '"') {
             break;
@@ -56,7 +53,9 @@ char *extract_json_string(char *start) {
 
     /* Allocate and copy the string */
     char *result = malloc(len + 1);
-    if (!result) return NULL;
+    if (!result) {
+        return NULL;
+    }
 
     char *src = start;
     char *dst = result;
@@ -66,12 +65,24 @@ char *extract_json_string(char *start) {
         if (*src == '\\' && *(src + 1)) {
             char next = *(src + 1);
             switch (next) {
-                case 'n': *dst = '\n'; break;
-                case 't': *dst = '\t'; break;
-                case 'r': *dst = '\r'; break;
-                case '"': *dst = '"'; break;
-                case '\\': *dst = '\\'; break;
-                default: *dst = next; break;
+            case 'n':
+                *dst = '\n';
+                break;
+            case 't':
+                *dst = '\t';
+                break;
+            case 'r':
+                *dst = '\r';
+                break;
+            case '"':
+                *dst = '"';
+                break;
+            case '\\':
+                *dst = '\\';
+                break;
+            default:
+                *dst = next;
+                break;
             }
             src += 2;
             dst++;
@@ -88,12 +99,16 @@ char *extract_json_string(char *start) {
 
 /* URL encode a string for use in query parameters */
 str url_encode(str s) {
-    if (!s.data) return str_create("");
+    if (!s.data) {
+        return str_create("");
+    }
 
     str encoded = {0};
     encoded.cap = s.len * 3 + 1;
     encoded.data = malloc(encoded.cap);
-    if (!encoded.data) return encoded;
+    if (!encoded.data) {
+        return encoded;
+    }
 
     size_t pos = 0;
     for (const char *p = s.data; *p; p++) {
